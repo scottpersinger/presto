@@ -81,6 +81,13 @@ public class ThriftTpchService
     }
 
     @Override
+    public final List<String> writeRows(List<String> columnNames,
+                                        PrestoThriftPageResult pageData)
+    {
+        return null;
+    }
+
+    @Override
     public final List<PrestoThriftSchemaTableName> listTables(PrestoThriftNullableSchemaName schemaNameOrNull)
     {
         List<PrestoThriftSchemaTableName> tables = new ArrayList<>();

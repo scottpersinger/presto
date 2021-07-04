@@ -118,4 +118,10 @@ public interface PrestoThriftService
             @ThriftField(name = "columns") List<String> columns,
             @ThriftField(name = "maxBytes") long maxBytes,
             @ThriftField(name = "nextToken") PrestoThriftNullableToken nextToken);
+
+    @ThriftMethod("prestoWriteRows")
+    List<String> writeRows(
+            @ThriftField(name = "columnNames") List<String> columnNames,
+            @ThriftField(name = "pageData") PrestoThriftPageResult pageData)
+            throws PrestoThriftServiceException, TException;
 }

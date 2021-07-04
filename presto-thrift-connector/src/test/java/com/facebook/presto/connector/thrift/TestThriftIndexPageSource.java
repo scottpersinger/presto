@@ -297,6 +297,13 @@ public class TestThriftIndexPageSource
         }
 
         @Override
+        public List<String> writeRows(List<String> columnNames, PrestoThriftPageResult pageData)
+                throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public List<PrestoThriftSchemaTableName> listTables(PrestoThriftNullableSchemaName schemaNameOrNull)
                 throws PrestoThriftServiceException
         {

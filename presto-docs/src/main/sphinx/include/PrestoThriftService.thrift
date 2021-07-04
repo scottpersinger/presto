@@ -365,4 +365,9 @@ service PrestoThriftService {
       3: i64 maxBytes,
       4: PrestoThriftNullableToken nextToken)
     throws (1: PrestoThriftServiceException ex1);
+
+  list<string> prestoWriteRows(
+      1: list<string> columnNames,
+      2: PrestoThriftPageResult pageData)
+    throws (1: PrestoThriftServiceException ex1);
 }

@@ -16,10 +16,12 @@ package com.facebook.presto.connector.thrift;
 import com.facebook.drift.TException;
 import com.facebook.drift.client.DriftClient;
 import com.facebook.presto.common.predicate.TupleDomain;
+import com.facebook.presto.common.type.Type;
 import com.facebook.presto.common.type.TypeManager;
 import com.facebook.presto.connector.thrift.annotations.ForMetadataRefresh;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ColumnMetadata;
+import com.facebook.presto.spi.ConnectorInsertTableHandle;
 import com.facebook.presto.spi.ConnectorResolvedIndex;
 import com.facebook.presto.spi.ConnectorSession;
 import com.facebook.presto.spi.ConnectorTableHandle;
@@ -33,6 +35,8 @@ import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.spi.SchemaTablePrefix;
 import com.facebook.presto.spi.TableNotFoundException;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
+import com.facebook.presto.spi.connector.ConnectorOutputMetadata;
+import com.facebook.presto.spi.statistics.ComputedStatistics;
 import com.facebook.presto.thrift.api.connector.PrestoThriftNullableSchemaName;
 import com.facebook.presto.thrift.api.connector.PrestoThriftNullableTableMetadata;
 import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
@@ -42,10 +46,14 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import io.airlift.slice.Slice;
 import io.airlift.units.Duration;
 
 import javax.inject.Inject;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,6 +81,7 @@ public class ThriftMetadata
     private final ThriftHeaderProvider thriftHeaderProvider;
     private final TypeManager typeManager;
     private final LoadingCache<SchemaTableName, Optional<ThriftTableMetadata>> tableCache;
+    private final Map<SchemaTableName, Long> tableIds = new HashMap<>();
 
     @Inject
     public ThriftMetadata(
@@ -226,5 +235,37 @@ public class ThriftMetadata
         catch (PrestoThriftServiceException | TException e) {
             throw toPrestoException(e);
         }
+    }
+
+    @Override
+    public synchronized ThriftInsertTableHandle beginInsert(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        ThriftTableHandle thriftTableHandle = (ThriftTableHandle) tableHandle;
+        // This needs to construct a ThriftInsertTableHandle which contains the
+        // column names and types of the target table. We will need these to unpack
+        // the Page blocks we receive on the PageSink.
+        ConnectorTableMetadata metadata = getTableMetadata(session, tableHandle);
+        ArrayList<Type> columnTypes = new ArrayList<Type>();
+        ArrayList<String> columnNames = new ArrayList<String>();
+        for (int i = 0; i < metadata.getColumns().size(); i++) {
+            columnTypes.add(metadata.getColumns().get(i).getType());
+            columnNames.add(metadata.getColumns().get(i).getName());
+        }
+
+        return new ThriftInsertTableHandle(thriftTableHandle, columnTypes, columnNames);
+    }
+
+    @Override
+    public synchronized Optional<ConnectorOutputMetadata> finishInsert(
+            ConnectorSession session,
+            ConnectorInsertTableHandle insertHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics)
+    {
+        requireNonNull(insertHandle, "insertHandle is null");
+        ThriftInsertTableHandle thriftInsertHandle = (ThriftInsertTableHandle) insertHandle;
+
+        //updateRowsOnHosts(memoryInsertHandle.getTable(), fragments);
+        return Optional.empty();
     }
 }
