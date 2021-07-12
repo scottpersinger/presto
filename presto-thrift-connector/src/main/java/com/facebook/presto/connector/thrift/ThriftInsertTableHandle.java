@@ -15,6 +15,7 @@ package com.facebook.presto.connector.thrift;
 
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
+import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
@@ -25,7 +26,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static java.util.Objects.requireNonNull;
 
 public class ThriftInsertTableHandle
-        implements ConnectorInsertTableHandle
+        implements ConnectorInsertTableHandle, ConnectorOutputTableHandle
 {
     private final ThriftTableHandle table;
     private final List<Type> columnTypes;

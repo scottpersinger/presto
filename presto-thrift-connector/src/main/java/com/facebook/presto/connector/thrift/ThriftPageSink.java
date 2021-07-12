@@ -18,8 +18,11 @@ import com.facebook.drift.client.DriftClient;
 import com.facebook.presto.common.Page;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.ConnectorInsertTableHandle;
+import com.facebook.presto.spi.ConnectorOutputTableHandle;
 import com.facebook.presto.spi.ConnectorPageSink;
+import com.facebook.presto.spi.PrestoException;
 import com.facebook.presto.thrift.api.connector.PrestoThriftPageResult;
+import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
 import com.facebook.presto.thrift.api.connector.PrestoThriftService;
 import com.facebook.presto.thrift.api.connector.PrestoThriftServiceException;
 import com.facebook.presto.thrift.api.datatypes.PrestoThriftBlock;
@@ -32,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -42,7 +46,9 @@ public class ThriftPageSink
     private final PrestoThriftService client;
     private final List<Type> columnTypes;
     private final List<String> columnNames;
+    private final ThriftInsertTableHandle tableHandle;
 
+    // Get a page sink for inserting into an existing table
     public ThriftPageSink(DriftClient<PrestoThriftService> client,
                           Map<String, String> thriftHeader,
                           ConnectorInsertTableHandle insertTableHandle)
@@ -50,7 +56,20 @@ public class ThriftPageSink
         // init client
         requireNonNull(client, "client is null");
         this.client = client.get(thriftHeader);
-        ThriftInsertTableHandle tableHandle = (ThriftInsertTableHandle) insertTableHandle;
+        this.tableHandle = (ThriftInsertTableHandle) insertTableHandle;
+        this.columnTypes = tableHandle.getColumnTypes();
+        this.columnNames = tableHandle.getColumnNames();
+    }
+
+    // Get a page sink for inserting into a new table
+    public ThriftPageSink(DriftClient<PrestoThriftService> client,
+                          Map<String, String> thriftHeader,
+                          ConnectorOutputTableHandle outputTableHandle)
+    {
+        // init client
+        requireNonNull(client, "client is null");
+        this.client = client.get(thriftHeader);
+        this.tableHandle = (ThriftInsertTableHandle) outputTableHandle;
         this.columnTypes = tableHandle.getColumnTypes();
         this.columnNames = tableHandle.getColumnNames();
     }
@@ -69,13 +88,19 @@ public class ThriftPageSink
         PrestoThriftPageResult pageData = new PrestoThriftPageResult(columnBlocks, rowCount, null);
 
         try {
-            client.writeRows(columnNames, pageData);
+            PrestoThriftSchemaTableName schemaTableName =
+                    new PrestoThriftSchemaTableName(
+                            tableHandle.getTable().getSchemaName(),
+                            tableHandle.getTable().getTableName()
+                    );
+            List<String> colTypes = columnTypes.stream().map(Type::getDisplayName).collect(Collectors.toList());
+            long count = client.writeRows(schemaTableName, columnNames, colTypes, pageData);
         }
         catch (PrestoThriftServiceException e) {
-            System.out.println(e);
+            throw new PrestoException(ThriftErrorCode.THRIFT_SERVICE_GENERIC_REMOTE_ERROR, e);
         }
         catch (TException e) {
-            System.out.println(e);
+            throw new PrestoException(ThriftErrorCode.THRIFT_SERVICE_GENERIC_REMOTE_ERROR, e);
         }
         return NOT_BLOCKED;
     }

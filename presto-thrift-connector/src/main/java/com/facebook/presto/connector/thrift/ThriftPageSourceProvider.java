@@ -25,7 +25,10 @@ import com.facebook.presto.thrift.api.connector.PrestoThriftService;
 
 import javax.inject.Inject;
 
+import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,7 +41,11 @@ public class ThriftPageSourceProvider
     private final ThriftConnectorStats stats;
 
     @Inject
-    public ThriftPageSourceProvider(DriftClient<PrestoThriftService> client, ThriftHeaderProvider thriftHeaderProvider, ThriftConnectorStats stats, ThriftConnectorConfig config)
+    public ThriftPageSourceProvider(
+            DriftClient<PrestoThriftService> client,
+            ThriftHeaderProvider thriftHeaderProvider,
+            ThriftConnectorStats stats,
+            ThriftConnectorConfig config)
     {
         this.client = requireNonNull(client, "client is null");
         this.thriftHeaderProvider = requireNonNull(thriftHeaderProvider, "thriftHeaderFactor is null");
@@ -54,6 +61,23 @@ public class ThriftPageSourceProvider
             List<ColumnHandle> columns,
             SplitContext splitContext)
     {
-        return new ThriftPageSource(client, thriftHeaderProvider.getHeaders(session), (ThriftConnectorSplit) split, columns, stats, maxBytesPerResponse);
+        Map<String, String> sessionProperties = new HashMap<String,String>();
+        try {
+            Method meth = session.getClass().getMethod("getProperties");
+            Map<String, String> results = (Map<String, String>)meth.invoke(session);
+            sessionProperties.putAll(results);
+            System.out.println("Found session properties: " + results.toString());
+        }
+        catch (Exception e) {
+            System.out.println(e);
+        }
+        return new ThriftPageSource(
+                client,
+                thriftHeaderProvider.getHeaders(session),
+                (ThriftConnectorSplit) split,
+                columns,
+                stats,
+                maxBytesPerResponse,
+                sessionProperties);
     }
 }

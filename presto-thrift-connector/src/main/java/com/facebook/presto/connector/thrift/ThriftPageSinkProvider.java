@@ -51,7 +51,10 @@ public class ThriftPageSinkProvider
             ConnectorOutputTableHandle outputTableHandle,
             PageSinkContext pageSinkContext)
     {
-        return null;
+        return new ThriftPageSink(
+                client,
+                thriftHeaderProvider.getHeaders(session),
+                outputTableHandle);
     }
 
     @Override

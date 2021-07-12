@@ -18,22 +18,9 @@ import com.facebook.drift.client.DriftClient;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.common.type.TypeManager;
+import com.facebook.presto.common.type.VarcharType;
 import com.facebook.presto.connector.thrift.annotations.ForMetadataRefresh;
-import com.facebook.presto.spi.ColumnHandle;
-import com.facebook.presto.spi.ColumnMetadata;
-import com.facebook.presto.spi.ConnectorInsertTableHandle;
-import com.facebook.presto.spi.ConnectorResolvedIndex;
-import com.facebook.presto.spi.ConnectorSession;
-import com.facebook.presto.spi.ConnectorTableHandle;
-import com.facebook.presto.spi.ConnectorTableLayout;
-import com.facebook.presto.spi.ConnectorTableLayoutHandle;
-import com.facebook.presto.spi.ConnectorTableLayoutResult;
-import com.facebook.presto.spi.ConnectorTableMetadata;
-import com.facebook.presto.spi.Constraint;
-import com.facebook.presto.spi.PrestoException;
-import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.spi.SchemaTablePrefix;
-import com.facebook.presto.spi.TableNotFoundException;
+import com.facebook.presto.spi.*;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.connector.ConnectorOutputMetadata;
 import com.facebook.presto.spi.statistics.ComputedStatistics;
@@ -42,6 +29,7 @@ import com.facebook.presto.thrift.api.connector.PrestoThriftNullableTableMetadat
 import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
 import com.facebook.presto.thrift.api.connector.PrestoThriftService;
 import com.facebook.presto.thrift.api.connector.PrestoThriftServiceException;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -63,6 +51,8 @@ import java.util.concurrent.Executor;
 
 import static com.facebook.presto.connector.thrift.ThriftErrorCode.THRIFT_SERVICE_INVALID_RESPONSE;
 import static com.facebook.presto.connector.thrift.util.ThriftExceptions.toPrestoException;
+import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
+import static com.facebook.presto.spi.StandardErrorCode.PERMISSION_DENIED;
 import static com.google.common.cache.CacheLoader.asyncReloading;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -237,6 +227,7 @@ public class ThriftMetadata
         }
     }
 
+    // start inserting data into an existing table
     @Override
     public synchronized ThriftInsertTableHandle beginInsert(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
@@ -268,4 +259,91 @@ public class ThriftMetadata
         //updateRowsOnHosts(memoryInsertHandle.getTable(), fragments);
         return Optional.empty();
     }
+
+    // start creation of a new table with data
+    @Override
+    public synchronized ThriftInsertTableHandle beginCreateTable(
+            ConnectorSession session,
+            ConnectorTableMetadata tableMetadata,
+            Optional<ConnectorNewTableLayout> layout)
+    {
+        ThriftTableHandle tableHandle = new ThriftTableHandle(
+                tableMetadata.getTable().getSchemaName(),
+                tableMetadata.getTable().getTableName());
+
+                    ArrayList<Type> columnTypes = new ArrayList<Type>();
+        ArrayList<String> columnNames = new ArrayList<String>();
+        for (int i = 0; i < tableMetadata.getColumns().size(); i++) {
+            columnTypes.add(tableMetadata.getColumns().get(i).getType());
+            columnNames.add(tableMetadata.getColumns().get(i).getName());
+        }
+
+        return new ThriftInsertTableHandle(tableHandle, columnTypes, columnNames);
+    }
+
+    @Override
+    public synchronized Optional<ConnectorOutputMetadata> finishCreateTable(
+            ConnectorSession session,
+            ConnectorOutputTableHandle tableHandle,
+            Collection<Slice> fragments,
+            Collection<ComputedStatistics> computedStatistics)
+    {
+        return Optional.empty();
+    }
+
+    @Override
+    public void dropTable(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        ThriftTableHandle thriftTableHandle = (ThriftTableHandle) tableHandle;
+        try {
+            ;
+            client.get(thriftHeaderProvider.getHeaders(session)).
+                    dropTable(new PrestoThriftSchemaTableName(
+                            thriftTableHandle.getSchemaName(),
+                            thriftTableHandle.getTableName()
+                    )
+            );
+        }
+        catch (PrestoThriftServiceException | TException e) {
+            throw toPrestoException(e);
+        }
+    }
+
+
+    /**
+     * Get the column handle that will generate row IDs for the delete operation.
+     * These IDs will be passed to the {@code deleteRows()} method of the
+     * {@link com.facebook.presto.spi.UpdatablePageSource} that created them.
+     */
+    @Override
+    public ColumnHandle getUpdateRowIdColumnHandle(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        return new ThriftColumnHandle(
+                "keyColumn",
+                VarcharType.VARCHAR,
+                null,
+                false);
+    }
+
+    /**
+     * Begin delete query
+     */
+    @Override
+    public ConnectorTableHandle beginDelete(ConnectorSession session, ConnectorTableHandle tableHandle)
+    {
+        return tableHandle;
+    }
+
+    /**
+     * Finish delete query
+     *
+     * @param fragments all fragments returned by {@link com.facebook.presto.spi.UpdatablePageSource#finish()}
+     */
+    @Override
+    public void finishDelete(ConnectorSession session, ConnectorTableHandle tableHandle, Collection<Slice> fragments)
+    {
+        throw new PrestoException(NOT_SUPPORTED, "This connector does not support deletes");
+    }
+
+
 }

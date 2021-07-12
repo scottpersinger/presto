@@ -17,6 +17,7 @@ import com.facebook.drift.annotations.ThriftConstructor;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftStruct;
 import com.facebook.presto.common.block.Block;
+import com.facebook.presto.common.type.CharType;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.common.type.VarcharType;
 
@@ -77,7 +78,10 @@ public final class PrestoThriftVarchar
     @Override
     public Block toBlock(Type desiredType)
     {
-        checkArgument(desiredType.getClass() == VarcharType.class, "type doesn't match: %s", desiredType);
+        checkArgument(
+                desiredType.getClass() == VarcharType.class
+                   || desiredType.getClass() == CharType.class,
+                "type doesn't match: %s", desiredType);
         return sliceType.toBlock(desiredType);
     }
 

@@ -20,6 +20,8 @@ import javax.inject.Inject;
 
 import java.util.List;
 
+import static com.facebook.presto.spi.session.PropertyMetadata.integerProperty;
+
 /**
  * Internal session properties are those defined by the connector itself.
  * These properties control certain aspects of connector's work.
@@ -31,7 +33,14 @@ public final class ThriftSessionProperties
     @Inject
     public ThriftSessionProperties(ThriftConnectorConfig config)
     {
-        sessionProperties = ImmutableList.of();
+        //sessionProperties = ImmutableList.of();
+        sessionProperties = ImmutableList.of(
+                integerProperty(
+                        "max_cache_age",
+                        "Maximum cache age in seconds",
+                        999999,
+                        false)
+        );
     }
 
     public List<PropertyMetadata<?>> getSessionProperties()

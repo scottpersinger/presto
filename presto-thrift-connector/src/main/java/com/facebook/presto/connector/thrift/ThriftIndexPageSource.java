@@ -19,14 +19,7 @@ import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorPageSource;
 import com.facebook.presto.spi.RecordSet;
-import com.facebook.presto.thrift.api.connector.PrestoThriftId;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableToken;
-import com.facebook.presto.thrift.api.connector.PrestoThriftPageResult;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftService;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSplit;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSplitBatch;
-import com.facebook.presto.thrift.api.connector.PrestoThriftTupleDomain;
+import com.facebook.presto.thrift.api.connector.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -312,10 +305,12 @@ public class ThriftIndexPageSource
     private void sendDataRequest(RunningSplitContext context, @Nullable PrestoThriftId nextToken)
     {
         long start = System.nanoTime();
+        ArrayList<PrestoThriftColumnMetadata> props = new ArrayList<PrestoThriftColumnMetadata>();
         ListenableFuture<PrestoThriftPageResult> future = context.getClient().getRows(
                 context.getSplit().getSplitId(),
                 outputColumnNames,
                 maxBytesPerResponse,
+                props,
                 new PrestoThriftNullableToken(nextToken));
         future = catchingThriftException(future);
         future.addListener(() -> readTimeNanos.addAndGet(System.nanoTime() - start), directExecutor());

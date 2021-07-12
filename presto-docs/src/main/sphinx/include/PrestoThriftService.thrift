@@ -363,11 +363,32 @@ service PrestoThriftService {
       1: PrestoThriftId splitId,
       2: list<string> columns,
       3: i64 maxBytes,
-      4: PrestoThriftNullableToken nextToken)
+      4: list<PrestoThriftColumnMetadata> sessionProperties,
+      5: PrestoThriftNullableToken nextToken)
     throws (1: PrestoThriftServiceException ex1);
 
-  list<string> prestoWriteRows(
-      1: list<string> columnNames,
-      2: PrestoThriftPageResult pageData)
+  i64 prestoWriteRows(
+      1: PrestoThriftSchemaTableName schemaTableName,
+      2: list<string> columnNames,
+      3: list<string> columnTypes,
+      4: PrestoThriftPageResult pageData)
+    throws (1: PrestoThriftServiceException ex1);
+
+  void prestoDropTable(1: PrestoThriftSchemaTableName schemaTableName)
+    throws (1: PrestoThriftServiceException ex1);
+
+ /**
+  * Create the specified view. The data for the view is opaque to the connector.
+  */
+  void prestoCreateView(
+      1: PrestoThriftTableMetadata viewMetadata,
+      2: string viewData,
+      3: bool replace)
+    throws (1: PrestoThriftServiceException ex1);
+
+ /**
+  * Drop the specified view.
+  */
+  void prestoDropView(1: PrestoThriftSchemaTableName viewName)
     throws (1: PrestoThriftServiceException ex1);
 }

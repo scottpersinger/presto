@@ -615,7 +615,8 @@ public interface ConnectorMetadata
      */
     default boolean supportsMetadataDelete(ConnectorSession session, ConnectorTableHandle tableHandle, Optional<ConnectorTableLayoutHandle> tableLayoutHandle)
     {
-        throw new PrestoException(NOT_SUPPORTED, "This connector does not support deletes");
+        return false;
+        //throw new PrestoException(NOT_SUPPORTED, "This connector does not support deletes");
     }
 
     /**

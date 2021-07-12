@@ -117,11 +117,32 @@ public interface PrestoThriftService
             @ThriftField(name = "splitId") PrestoThriftId splitId,
             @ThriftField(name = "columns") List<String> columns,
             @ThriftField(name = "maxBytes") long maxBytes,
+            @ThriftField(name = "sessionProperties") List<PrestoThriftColumnMetadata> sessionProperties,
             @ThriftField(name = "nextToken") PrestoThriftNullableToken nextToken);
 
     @ThriftMethod("prestoWriteRows")
-    List<String> writeRows(
+    long writeRows(
+            @ThriftField(name = "schemaTableName") PrestoThriftSchemaTableName schemaTableName,
             @ThriftField(name = "columnNames") List<String> columnNames,
+            @ThriftField(name = "columnTypes") List<String> columnTypes,
             @ThriftField(name = "pageData") PrestoThriftPageResult pageData)
+            throws PrestoThriftServiceException, TException;
+
+    @ThriftMethod("prestoDropTable")
+    void dropTable(PrestoThriftSchemaTableName schemaTableName)
+            throws PrestoThriftServiceException, TException;
+
+    /**
+     * Create the specified view. The data for the view is opaque to the connector.
+     */
+    @ThriftMethod("prestoCreateView")
+    void createView(PrestoThriftTableMetadata viewMetadata, String viewData, boolean replace)
+            throws PrestoThriftServiceException, TException;
+
+    /**
+     * Drop the specified view.
+     */
+    @ThriftMethod("prestoDropView")
+    void dropView(PrestoThriftSchemaTableName viewName)
             throws PrestoThriftServiceException, TException;
 }

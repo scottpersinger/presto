@@ -32,6 +32,7 @@ import static com.facebook.drift.annotations.ThriftField.Requiredness.OPTIONAL;
 import static com.facebook.presto.common.type.StandardTypes.ARRAY;
 import static com.facebook.presto.common.type.StandardTypes.BIGINT;
 import static com.facebook.presto.common.type.StandardTypes.BOOLEAN;
+import static com.facebook.presto.common.type.StandardTypes.CHAR;
 import static com.facebook.presto.common.type.StandardTypes.DATE;
 import static com.facebook.presto.common.type.StandardTypes.DOUBLE;
 import static com.facebook.presto.common.type.StandardTypes.HYPER_LOG_LOG;
@@ -265,6 +266,7 @@ public final class PrestoThriftBlock
                 return PrestoThriftBigint.fromBlock(block);
             case DOUBLE:
                 return PrestoThriftDouble.fromBlock(block);
+            case CHAR:
             case VARCHAR:
                 return PrestoThriftVarchar.fromBlock(block, type);
             case BOOLEAN:

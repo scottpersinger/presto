@@ -19,13 +19,11 @@ import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.ColumnHandle;
 import com.facebook.presto.spi.ConnectorPageSource;
 import com.facebook.presto.spi.HostAddress;
-import com.facebook.presto.thrift.api.connector.PrestoThriftId;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableToken;
-import com.facebook.presto.thrift.api.connector.PrestoThriftPageResult;
-import com.facebook.presto.thrift.api.connector.PrestoThriftService;
+import com.facebook.presto.thrift.api.connector.*;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +55,7 @@ public class ThriftPageSource
     private final ThriftConnectorStats stats;
     private long completedBytes;
     private long completedPositions;
+    private Map<String,String> sessionProperties;
 
     public ThriftPageSource(
             DriftClient<PrestoThriftService> client,
@@ -64,7 +63,8 @@ public class ThriftPageSource
             ThriftConnectorSplit split,
             List<ColumnHandle> columns,
             ThriftConnectorStats stats,
-            long maxBytesPerResponse)
+            long maxBytesPerResponse,
+            Map<String,String> sessionProperties)
     {
         // init columns
         requireNonNull(columns, "columns is null");
@@ -99,6 +99,8 @@ public class ThriftPageSource
                     .collect(joining(","));
             this.client = client.get(Optional.of(hosts), thriftHeader);
         }
+
+        this.sessionProperties = sessionProperties;
     }
 
     @Override
@@ -170,10 +172,14 @@ public class ThriftPageSource
     private CompletableFuture<PrestoThriftPageResult> sendDataRequestInternal()
     {
         long start = System.nanoTime();
+        ArrayList<PrestoThriftColumnMetadata> props = new ArrayList<PrestoThriftColumnMetadata>();
+        this.sessionProperties.forEach((key, val) ->
+                props.add(new PrestoThriftColumnMetadata(key, val, null, false)));
         ListenableFuture<PrestoThriftPageResult> rowsBatchFuture = client.getRows(
                 splitId,
                 columnNames,
                 maxBytesPerResponse,
+                props,
                 new PrestoThriftNullableToken(nextToken));
         rowsBatchFuture = catchingThriftException(rowsBatchFuture);
         rowsBatchFuture.addListener(() -> readTimeNanos.addAndGet(System.nanoTime() - start), directExecutor());

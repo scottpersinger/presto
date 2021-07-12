@@ -19,18 +19,7 @@ import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.InMemoryRecordSet;
 import com.facebook.presto.spi.SchemaTableName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftId;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableColumnSet;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableSchemaName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableTableMetadata;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableToken;
-import com.facebook.presto.thrift.api.connector.PrestoThriftPageResult;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftService;
-import com.facebook.presto.thrift.api.connector.PrestoThriftServiceException;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSplit;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSplitBatch;
-import com.facebook.presto.thrift.api.connector.PrestoThriftTupleDomain;
+import com.facebook.presto.thrift.api.connector.*;
 import com.facebook.presto.thrift.api.datatypes.PrestoThriftInteger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -78,7 +67,12 @@ public class TestThriftIndexPageSource
         TestingThriftService client = new TestingThriftService(rowsPerSplit, false, false)
         {
             @Override
-            public ListenableFuture<PrestoThriftPageResult> getRows(PrestoThriftId splitId, List<String> columns, long maxBytes, PrestoThriftNullableToken nextToken)
+            public ListenableFuture<PrestoThriftPageResult> getRows(
+                    PrestoThriftId splitId,
+                    List<String> columns,
+                    long maxBytes,
+                    List<PrestoThriftColumnMetadata> sessionProperties,
+                    PrestoThriftNullableToken nextToken)
             {
                 int key = Ints.fromByteArray(splitId.getId());
                 signals.get(key).countDown();
@@ -276,7 +270,12 @@ public class TestThriftIndexPageSource
         }
 
         @Override
-        public ListenableFuture<PrestoThriftPageResult> getRows(PrestoThriftId splitId, List<String> columns, long maxBytes, PrestoThriftNullableToken nextToken)
+        public ListenableFuture<PrestoThriftPageResult> getRows(
+                PrestoThriftId splitId,
+                List<String> columns,
+                long maxBytes,
+                List<PrestoThriftColumnMetadata> sessionProperties,
+                PrestoThriftNullableToken nextToken)
         {
             if (rowsPerSplit == 0) {
                 return immediateFuture(new PrestoThriftPageResult(ImmutableList.of(), 0, null));
@@ -297,7 +296,10 @@ public class TestThriftIndexPageSource
         }
 
         @Override
-        public List<String> writeRows(List<String> columnNames, PrestoThriftPageResult pageData)
+        public long writeRows(PrestoThriftSchemaTableName schemaTableName,
+                                      List<String> columnNames,
+                                      List<String> columnTypes,
+                                      PrestoThriftPageResult pageData)
                 throws PrestoThriftServiceException
         {
             throw new UnsupportedOperationException();
@@ -321,6 +323,26 @@ public class TestThriftIndexPageSource
         public ListenableFuture<PrestoThriftSplitBatch> getSplits(PrestoThriftSchemaTableName schemaTableName, PrestoThriftNullableColumnSet desiredColumns, PrestoThriftTupleDomain outputConstraint, int maxSplitCount, PrestoThriftNullableToken nextToken)
         {
             throw new UnsupportedOperationException();
+        }
+        @Override
+        public void dropTable(PrestoThriftSchemaTableName schemaTableName)
+                throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException("lookup is not supported");
+        }
+
+        @Override
+        public void createView(PrestoThriftTableMetadata viewMetadata, String viewData, boolean replace)
+                throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException("lookup is not supported");
+        }
+
+        @Override
+        public void dropView(PrestoThriftSchemaTableName viewName)
+                throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException("lookup is not supported");
         }
     }
 

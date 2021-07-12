@@ -149,6 +149,8 @@ public class FullConnectorSession
         return session.getSchema();
     }
 
+    public Map<String, String> getProperties() { return properties; }
+
     @Override
     public String toString()
     {

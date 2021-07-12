@@ -14,6 +14,8 @@
 package com.facebook.presto.connector.thrift.server;
 
 import com.facebook.airlift.json.JsonCodec;
+import com.facebook.drift.TException;
+import com.facebook.drift.annotations.ThriftMethod;
 import com.facebook.presto.common.Page;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.common.type.Type;
@@ -81,10 +83,12 @@ public class ThriftTpchService
     }
 
     @Override
-    public final List<String> writeRows(List<String> columnNames,
-                                        PrestoThriftPageResult pageData)
+    public final long writeRows(PrestoThriftSchemaTableName schemaTableName,
+                                List<String> columnNames,
+                                List<String> columnTypes,
+                                PrestoThriftPageResult pageData)
     {
-        return null;
+        return 0L;
     }
 
     @Override
@@ -185,6 +189,7 @@ public class ThriftTpchService
             PrestoThriftId splitId,
             List<String> outputColumns,
             long maxBytes,
+            List<PrestoThriftColumnMetadata> sessionProperties,
             PrestoThriftNullableToken nextToken)
     {
         return executor.submit(() -> getRowsSync(splitId, outputColumns, maxBytes, nextToken));
@@ -326,5 +331,26 @@ public class ThriftTpchService
     private static String getTypeString(TpchColumn<?> column)
     {
         return getPrestoType(column).getTypeSignature().toString();
+    }
+
+    @Override
+    public void dropTable(PrestoThriftSchemaTableName schemaTableName)
+            throws PrestoThriftServiceException
+    {
+        throw new UnsupportedOperationException("lookup is not supported");
+    }
+
+    @Override
+    public void createView(PrestoThriftTableMetadata viewMetadata, String viewData, boolean replace)
+            throws PrestoThriftServiceException
+    {
+        throw new UnsupportedOperationException("lookup is not supported");
+    }
+
+    @Override
+    public void dropView(PrestoThriftSchemaTableName viewName)
+            throws PrestoThriftServiceException
+    {
+        throw new UnsupportedOperationException("lookup is not supported");
     }
 }
