@@ -14,6 +14,7 @@
 package com.facebook.presto.password;
 
 import com.facebook.presto.password.file.FileAuthenticatorFactory;
+import com.facebook.presto.password.file.OauthAuthenticatorFactory;
 import com.facebook.presto.password.ldap.LdapAuthenticatorFactory;
 import com.facebook.presto.spi.Plugin;
 import com.facebook.presto.spi.security.PasswordAuthenticatorFactory;
@@ -28,6 +29,7 @@ public class PasswordAuthenticatorPlugin
         return ImmutableList.<PasswordAuthenticatorFactory>builder()
                 .add(new LdapAuthenticatorFactory())
                 .add(new FileAuthenticatorFactory())
+                .add(new OauthAuthenticatorFactory())
                 .build();
     }
 }

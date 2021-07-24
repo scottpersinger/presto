@@ -66,6 +66,7 @@ public class StaticCatalogStore
             throws Exception
     {
         loadCatalogs(ImmutableMap.of());
+        DynamicConnectorConfig dc = new DynamicConnectorConfig();
     }
 
     public void loadCatalogs(Map<String, Map<String, String>> additionalCatalogs)
