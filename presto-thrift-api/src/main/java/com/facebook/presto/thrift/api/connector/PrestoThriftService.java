@@ -18,6 +18,7 @@ import com.facebook.drift.annotations.ThriftException;
 import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.annotations.ThriftMethod;
 import com.facebook.drift.annotations.ThriftService;
+import com.facebook.presto.thrift.api.datatypes.PrestoThriftBlock;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.util.List;
@@ -126,6 +127,12 @@ public interface PrestoThriftService
             @ThriftField(name = "columnNames") List<String> columnNames,
             @ThriftField(name = "columnTypes") List<String> columnTypes,
             @ThriftField(name = "pageData") PrestoThriftPageResult pageData)
+            throws PrestoThriftServiceException, TException;
+
+    @ThriftMethod("prestoDeleteRows")
+    long deleteRows(
+            @ThriftField(name = "splitId") PrestoThriftId splitId,
+            @ThriftField(name = "rowIds") PrestoThriftBlock rowIds)
             throws PrestoThriftServiceException, TException;
 
     @ThriftMethod("prestoDropTable")

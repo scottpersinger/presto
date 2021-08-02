@@ -374,6 +374,9 @@ service PrestoThriftService {
       4: PrestoThriftPageResult pageData)
     throws (1: PrestoThriftServiceException ex1);
 
+  i64 prestoDeleteRows(1: PrestoThriftId splitId, 2: PrestoThriftBlock rowIds)
+    throws (1: PrestoThriftServiceException ex1);
+
   void prestoDropTable(1: PrestoThriftSchemaTableName schemaTableName)
     throws (1: PrestoThriftServiceException ex1);
 

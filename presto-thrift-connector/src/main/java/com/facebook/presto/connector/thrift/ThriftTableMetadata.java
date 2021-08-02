@@ -129,4 +129,10 @@ class ThriftTableMetadata
     {
         return indexableKeys.stream().map(ImmutableSet::copyOf).collect(toImmutableSet());
     }
+
+    public Set<Set<String>> getIndexableKeys()
+    {
+        return indexableKeys;
+    }
+
 }

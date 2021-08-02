@@ -20,6 +20,7 @@ import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.InMemoryRecordSet;
 import com.facebook.presto.spi.SchemaTableName;
 import com.facebook.presto.thrift.api.connector.*;
+import com.facebook.presto.thrift.api.datatypes.PrestoThriftBlock;
 import com.facebook.presto.thrift.api.datatypes.PrestoThriftInteger;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -301,6 +302,13 @@ public class TestThriftIndexPageSource
                                       List<String> columnTypes,
                                       PrestoThriftPageResult pageData)
                 throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long deleteRows(PrestoThriftId splitId,
+                               PrestoThriftBlock rowIds)
         {
             throw new UnsupportedOperationException();
         }

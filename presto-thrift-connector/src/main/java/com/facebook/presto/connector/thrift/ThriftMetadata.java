@@ -318,9 +318,29 @@ public class ThriftMetadata
     @Override
     public ColumnHandle getUpdateRowIdColumnHandle(ConnectorSession session, ConnectorTableHandle tableHandle)
     {
+        // return the first key column from the table metadata
+        ThriftTableHandle tHandle = (ThriftTableHandle)tableHandle;
+        ThriftTableMetadata metadata = getRequiredTableMetadata(
+                new SchemaTableName(tHandle.getSchemaName(), tHandle.getTableName())
+        );
+
+        String keyCol = "keyColumn";
+        Object[] keys = metadata.getIndexableKeys().toArray();
+        if (keys.length > 0) {
+            Set<String> keyCols = (Set<String>)keys[0];
+            if (keyCols.size() > 0) {
+                keyCol = (String)keyCols.toArray()[0];
+            }
+        }
+        Type keyColType = VarcharType.VARCHAR;
+        for (int i = 0; i < metadata.getColumns().size(); i++) {
+            if (metadata.getColumns().get(i).getName().equals(keyCol)) {
+                keyColType = metadata.getColumns().get(i).getType();
+            }
+        }
         return new ThriftColumnHandle(
                 "keyColumn",
-                VarcharType.VARCHAR,
+                keyColType,
                 null,
                 false);
     }
@@ -342,7 +362,6 @@ public class ThriftMetadata
     @Override
     public void finishDelete(ConnectorSession session, ConnectorTableHandle tableHandle, Collection<Slice> fragments)
     {
-        throw new PrestoException(NOT_SUPPORTED, "This connector does not support deletes");
     }
 
 

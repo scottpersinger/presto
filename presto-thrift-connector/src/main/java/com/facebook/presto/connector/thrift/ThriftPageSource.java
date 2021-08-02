@@ -13,20 +13,23 @@
  */
 package com.facebook.presto.connector.thrift;
 
+import com.facebook.drift.TException;
 import com.facebook.drift.client.DriftClient;
 import com.facebook.presto.common.Page;
+import com.facebook.presto.common.block.Block;
 import com.facebook.presto.common.type.Type;
+import com.facebook.presto.common.type.VarcharType;
 import com.facebook.presto.spi.ColumnHandle;
-import com.facebook.presto.spi.ConnectorPageSource;
+import com.facebook.presto.spi.PrestoException;
+import com.facebook.presto.spi.UpdatablePageSource;
 import com.facebook.presto.spi.HostAddress;
 import com.facebook.presto.thrift.api.connector.*;
+import com.facebook.presto.thrift.api.datatypes.PrestoThriftBlock;
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.ListenableFuture;
+import io.airlift.slice.Slice;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,8 +42,14 @@ import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 
+// Unintuitively, the `ThriftPageSource` implements both SELECT and DELETE, whereas INSERT
+// is handled by the `ThriftPageSink`. This is because writing happens without regard to
+// any existing rows, whereas DELETE is basically considered an "updateable query" where
+// the query is executed first, and then DELETE is requested on each resulting row (the
+// 'deleteRows' method is executed on the ThriftPageSource). This makes sense if you consider
+// that DELETE takes a WHERE clause just like SELECT.
 public class ThriftPageSource
-        implements ConnectorPageSource
+        implements UpdatablePageSource
 {
     private final PrestoThriftId splitId;
     private final PrestoThriftService client;
@@ -216,4 +225,43 @@ public class ThriftPageSource
             future.cancel(true);
         }
     }
+
+// UpdatablePageSource
+
+    @Override
+    public void deleteRows(Block rowIds) {
+        Type rowIdType = VarcharType.VARCHAR;
+        for (int i = 0; i < columnNames.size(); i++) {
+            if (columnNames.get(i).equals("keyColumn")) {
+                rowIdType = columnTypes.get(i);
+                break;
+            }
+        }
+        PrestoThriftBlock block = PrestoThriftBlock.fromBlock(rowIds, rowIdType);
+        try {
+            client.deleteRows(splitId, block);
+        }
+        catch (PrestoThriftServiceException e) {
+            throw new PrestoException(ThriftErrorCode.THRIFT_SERVICE_GENERIC_REMOTE_ERROR, e);
+        }
+        catch (TException e) {
+            throw new PrestoException(ThriftErrorCode.THRIFT_SERVICE_GENERIC_REMOTE_ERROR, e);
+        }
+
+        System.out.println("Deleting rows");
+    }
+
+    @Override
+    public CompletableFuture<Collection<Slice>> finish()
+    {
+        CompletableFuture<Collection<Slice>> cf = new CompletableFuture<>();
+        cf.complete(Collections.emptyList());
+        return cf;
+    };
+
+    @Override
+    public void abort() {
+
+    }
+
 }
