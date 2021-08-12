@@ -113,6 +113,12 @@ public class ThriftTpchService
     }
 
     @Override
+    public final List<PrestoThriftSchemaTableName> listViews(PrestoThriftNullableSchemaName schemaNameOrNull)
+    {
+        return new ArrayList<PrestoThriftSchemaTableName>();
+    }
+
+    @Override
     public final PrestoThriftNullableTableMetadata getTableMetadata(PrestoThriftSchemaTableName schemaTableName)
     {
         String schemaName = schemaTableName.getSchemaName();

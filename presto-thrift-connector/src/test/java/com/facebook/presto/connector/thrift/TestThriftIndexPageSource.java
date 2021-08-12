@@ -321,6 +321,13 @@ public class TestThriftIndexPageSource
         }
 
         @Override
+        public List<PrestoThriftSchemaTableName> listViews(PrestoThriftNullableSchemaName schemaNameOrNull)
+                throws PrestoThriftServiceException
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public PrestoThriftNullableTableMetadata getTableMetadata(PrestoThriftSchemaTableName schemaTableName)
                 throws PrestoThriftServiceException
         {

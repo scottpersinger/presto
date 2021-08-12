@@ -113,6 +113,9 @@ public class ColumnMetadata
     @Nullable // TODO make it Optional
     public String getExtraInfo()
     {
+        if (isHidden()) {
+            return "[hidden] " + (extraInfo != null ? extraInfo : "");
+        }
         return extraInfo;
     }
 

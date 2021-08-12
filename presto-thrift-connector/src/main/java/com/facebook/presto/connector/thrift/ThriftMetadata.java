@@ -14,6 +14,7 @@
 package com.facebook.presto.connector.thrift;
 
 import com.facebook.drift.TException;
+import com.facebook.drift.annotations.ThriftField;
 import com.facebook.drift.client.DriftClient;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.common.type.Type;
@@ -24,19 +25,16 @@ import com.facebook.presto.spi.*;
 import com.facebook.presto.spi.connector.ConnectorMetadata;
 import com.facebook.presto.spi.connector.ConnectorOutputMetadata;
 import com.facebook.presto.spi.statistics.ComputedStatistics;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableSchemaName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftNullableTableMetadata;
-import com.facebook.presto.thrift.api.connector.PrestoThriftSchemaTableName;
-import com.facebook.presto.thrift.api.connector.PrestoThriftService;
-import com.facebook.presto.thrift.api.connector.PrestoThriftServiceException;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.facebook.presto.thrift.api.connector.*;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import io.airlift.slice.Slice;
 import io.airlift.units.Duration;
 
+import javax.annotation.Nullable;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
@@ -51,8 +49,8 @@ import java.util.concurrent.Executor;
 
 import static com.facebook.presto.connector.thrift.ThriftErrorCode.THRIFT_SERVICE_INVALID_RESPONSE;
 import static com.facebook.presto.connector.thrift.util.ThriftExceptions.toPrestoException;
-import static com.facebook.presto.spi.StandardErrorCode.NOT_SUPPORTED;
-import static com.facebook.presto.spi.StandardErrorCode.PERMISSION_DENIED;
+import static com.facebook.presto.spi.StandardErrorCode.*;
+import static com.facebook.presto.spi.StandardErrorCode.ALREADY_EXISTS;
 import static com.google.common.cache.CacheLoader.asyncReloading;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static com.google.common.collect.ImmutableMap.toImmutableMap;
@@ -143,6 +141,20 @@ public class ThriftMetadata
     {
         try {
             return client.get(thriftHeaderProvider.getHeaders(session)).listTables(new PrestoThriftNullableSchemaName(schemaNameOrNull)).stream()
+                    .map(PrestoThriftSchemaTableName::toSchemaTableName)
+                    .collect(toImmutableList());
+        }
+        catch (PrestoThriftServiceException | TException e) {
+            throw toPrestoException(e);
+        }
+    }
+
+    @Override
+    public List<SchemaTableName> listViews(ConnectorSession session, Optional<String> schemaName)
+    {
+        try {
+            return client.get(thriftHeaderProvider.getHeaders(session)).
+                    listViews(new PrestoThriftNullableSchemaName(schemaName.orElse(null))).stream()
                     .map(PrestoThriftSchemaTableName::toSchemaTableName)
                     .collect(toImmutableList());
         }
@@ -364,5 +376,72 @@ public class ThriftMetadata
     {
     }
 
+    @Override
+    public synchronized void createView(
+            ConnectorSession session,
+            ConnectorTableMetadata viewMetadata,
+            String viewData, boolean replace)
+    {
+        SchemaTableName viewName = viewMetadata.getTable();
+        //checkSchemaExists(viewName.getSchemaName());
+        if (getTableHandle(session, viewName) != null) {
+            throw new PrestoException(ALREADY_EXISTS, "Table already exists: " + viewName);
+        }
 
+        List<PrestoThriftColumnMetadata> columns =
+                viewMetadata.getColumns().stream()
+                        .map(entry -> new PrestoThriftColumnMetadata(
+                                            entry.getName(),
+                                            entry.getType().getDisplayName(),
+                                            entry.getComment(),
+                                            entry.isHidden()))
+                        .collect(toImmutableList());
+
+        PrestoThriftTableMetadata thriftViewMetadata = new PrestoThriftTableMetadata(
+                new PrestoThriftSchemaTableName(viewMetadata.getTable()),
+                columns,
+                viewMetadata.getComment().orElse(null),
+                ImmutableList.of());
+
+        try {
+            client.get(thriftHeaderProvider.getHeaders(session)).
+                    createView(thriftViewMetadata, viewData, replace);
+        }
+        catch (PrestoThriftServiceException | TException e) {
+            throw toPrestoException(e);
+        }
+    }
+
+    @Override
+    public Map<SchemaTableName, ConnectorViewDefinition> getViews(ConnectorSession session, SchemaTablePrefix prefix)
+    {
+        ImmutableMap.Builder<SchemaTableName, ConnectorViewDefinition> builder = ImmutableMap.builder();
+        for (SchemaTableName stName : listViews(session, Optional.ofNullable(prefix.getSchemaName()))) {
+            try {
+                PrestoThriftNullableTableMetadata view = client.get(thriftHeaderProvider.getHeaders(session)).
+                        getTableMetadata(new PrestoThriftSchemaTableName(stName));
+                if (view.getTableMetadata() != null) {
+                    // FIXME: Tunneled viewData through the comment to avoid another type
+                    builder.put(stName, new ConnectorViewDefinition(stName, Optional.empty(),
+                            view.getTableMetadata().getComment()));
+                }
+            }
+            catch (PrestoThriftServiceException | TException e) {
+                throw toPrestoException(e);
+            }
+        }
+        return builder.build();
+    }
+
+    @Override
+    public synchronized void dropView(ConnectorSession session, SchemaTableName viewName)
+    {
+        try {
+            client.get(thriftHeaderProvider.getHeaders(session)).
+                    dropView(new PrestoThriftSchemaTableName(viewName));
+        }
+        catch (PrestoThriftServiceException | TException e) {
+            throw toPrestoException(e);
+        }
+    }
 }

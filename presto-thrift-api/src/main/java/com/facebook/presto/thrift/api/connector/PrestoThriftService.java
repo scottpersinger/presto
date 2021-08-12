@@ -50,6 +50,18 @@ public interface PrestoThriftService
             throws PrestoThriftServiceException, TException;
 
     /**
+     * Returns views for the given schema name.
+     *
+     * @param schemaNameOrNull a structure containing schema name or {@literal null}
+     * @return a list of view names with corresponding schemas. If schema name is null then returns
+     * a list of views for all schemas. Returns an empty list if a schema does not exist
+     */
+    @ThriftMethod("prestoListViews")
+    List<PrestoThriftSchemaTableName> listViews(
+            @ThriftField(name = "schemaNameOrNull") PrestoThriftNullableSchemaName schemaNameOrNull)
+            throws PrestoThriftServiceException, TException;
+
+    /**
      * Returns metadata for a given table.
      *
      * @param schemaTableName schema and table name

@@ -155,7 +155,7 @@ public class InformationSchemaPageSourceProvider
                 int ordinalPosition = 1;
                 for (ColumnMetadata column : entry.getValue()) {
                     if (column.isHidden()) {
-                        continue;
+                        //continue;
                     }
                     table.add(
                             prefix.getCatalogName(),

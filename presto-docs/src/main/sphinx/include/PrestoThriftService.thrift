@@ -300,6 +300,17 @@ service PrestoThriftService {
     throws (1: PrestoThriftServiceException ex1);
 
   /**
+   * Returns views for the given schema name.
+   *
+   * @param schemaNameOrNull a structure containing schema name or {@literal null}
+   * @return a list of view names with corresponding schemas. If schema name is null then returns
+   * a list of views for all schemas. Returns an empty list if a schema does not exist
+   */
+  list<PrestoThriftSchemaTableName> prestoListViews(
+      1: PrestoThriftNullableSchemaName schemaNameOrNull)
+    throws (1: PrestoThriftServiceException ex1);
+
+  /**
    * Returns metadata for a given table.
    *
    * @param schemaTableName schema and table name
