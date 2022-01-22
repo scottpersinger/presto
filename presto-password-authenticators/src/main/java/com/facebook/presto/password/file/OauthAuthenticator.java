@@ -17,15 +17,11 @@ import com.facebook.airlift.http.server.BasicPrincipal;
 import com.facebook.airlift.log.Logger;
 import com.facebook.presto.spi.security.AccessDeniedException;
 import com.facebook.presto.spi.security.PasswordAuthenticator;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 import javax.inject.Inject;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.security.Principal;
 import java.util.function.Supplier;
 
@@ -76,7 +72,8 @@ public class OauthAuthenticator
         // }
         if (!password.equals("secret")) {
             throw new AccessDeniedException("Invalid credentials");
-        } else {
+        }
+        else {
             return new BasicPrincipal(user);
         }
 

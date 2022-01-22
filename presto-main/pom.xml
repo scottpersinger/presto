@@ -13,6 +13,8 @@
 
     <properties>
         <air.main.basedir>${project.parent.basedir}</air.main.basedir>
+        <mongo-java.version>3.6.0</mongo-java.version>
+        <mongo-server.version>1.5.0</mongo-server.version>
     </properties>
 
     <dependencies>
@@ -454,9 +456,21 @@
 
         <dependency>
             <groupId>org.mongodb</groupId>
-            <artifactId>mongodb-driver-sync</artifactId>
-            <version>4.2.3</version>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>${mongo-java.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+        <!--dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>bson</artifactId>
+            <version>4.3.1</version>
+        </dependency-->
 
         <!--dependency>
             <groupId>org.mongodb</groupId>

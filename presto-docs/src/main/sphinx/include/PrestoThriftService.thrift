@@ -391,18 +391,18 @@ service PrestoThriftService {
   void prestoDropTable(1: PrestoThriftSchemaTableName schemaTableName)
     throws (1: PrestoThriftServiceException ex1);
 
- /**
-  * Create the specified view. The data for the view is opaque to the connector.
-  */
+  /**
+   * Create the specified view. The data for the view is opaque to the connector.
+   */
   void prestoCreateView(
       1: PrestoThriftTableMetadata viewMetadata,
       2: string viewData,
       3: bool replace)
     throws (1: PrestoThriftServiceException ex1);
 
- /**
-  * Drop the specified view.
-  */
+  /**
+   * Drop the specified view.
+   */
   void prestoDropView(1: PrestoThriftSchemaTableName viewName)
     throws (1: PrestoThriftServiceException ex1);
 }

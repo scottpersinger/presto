@@ -14,11 +14,7 @@
 package com.facebook.presto.connector.thrift.server;
 
 import com.facebook.airlift.json.JsonCodec;
-import com.facebook.drift.TException;
-import com.facebook.drift.annotations.ThriftField;
-import com.facebook.drift.annotations.ThriftMethod;
 import com.facebook.presto.common.Page;
-import com.facebook.presto.common.block.Block;
 import com.facebook.presto.common.predicate.TupleDomain;
 import com.facebook.presto.common.type.Type;
 import com.facebook.presto.spi.ConnectorPageSource;

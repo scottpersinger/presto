@@ -73,7 +73,7 @@ public class DynamicConnectorConfig
     @Override
     public String toString()
     {
-        final StringBuffer sb = new StringBuffer("DynamicConnectorConfig{");
+        final StringBuilder sb = new StringBuilder("DynamicConnectorConfig{");
         sb.append("id=").append(id);
         sb.append(", user_id=").append(userId);
         sb.append(", connectorName=").append(connectorName);

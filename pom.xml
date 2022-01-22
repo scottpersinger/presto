@@ -146,7 +146,7 @@
         <module>presto-resource-group-managers</module>
         <module>presto-password-authenticators</module>
         <module>presto-session-property-managers</module>
-        <module>presto-benchto-benchmarks</module>
+        <!--module>presto-benchto-benchmarks</module-->
         <module>presto-thrift-api</module>
         <module>presto-thrift-testing-server</module>
         <module>presto-thrift-connector</module>
